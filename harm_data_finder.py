@@ -62,7 +62,7 @@ class HarmDataFinder:
         if not isinstance(tokens, np.ndarray):
             tokens = np.array(tokens, dtype=np.uint16)
 
-        eos_positions = np.where(tokens == self.eos_token_id)[0]
+        eos_positions = np.where(tokens == self.eos_token_id)[0] 
         boundaries = np.concatenate([[0], eos_positions, [len(tokens)]])
         chunk_sizes = np.diff(boundaries)
         valid_mask = chunk_sizes >= min_doc_length
@@ -82,10 +82,10 @@ class HarmDataFinder:
     def eval_detoxify(self, token_chunk: list, threshold=0.8):
         text = self.tokenizer.decode(token_chunk)
         if not self.detoxify_model:
-            self.detoxify_model = Detoxify("multilingual")
+            self.detoxify_model = Detoxify("multilingual") #more sensitive than original? even when the text is originally only in english
 
         result = self.detoxify_model.predict(text)
-        return result["toxicity"] > threshold
+        return bool(result["toxicity"] > threshold)
 
     def eval_openai(self, token_chunk: list, threshold=0.8):
         text = self.tokenizer.decode(token_chunk)
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         split="document_boundary",
         min_doc_length=100,
         block_size=1024,
-        harm_data_finder="detoxify",
+        harm_data_finder="openai",
         max_harm_data=1,
     )
     print(chunks)
