@@ -12,10 +12,9 @@ from detoxify import Detoxify
 from tqdm import tqdm
 from openai import OpenAI
 from dotenv import load_dotenv
-
+import time
 load_dotenv(Path(__file__).parent.parent / ".env")
-
-
+print(os.getenv("OPENAI_API_KEY"))
 class DataLoader:
     def __init__(
         self, data_dir=Path(__file__).parent.parent / "nanoGPT" / "data" / "openwebtext"
@@ -91,11 +90,22 @@ class HarmDataFinder:
         text = self.tokenizer.decode(token_chunk)
         if not self.openai_model:
             self.openai_model = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            print(os.getenv("OPENAI_API_KEY"))
+        cur_try  = 0 
+        while cur_try < 3:
+            try:
+                result = self.openai_model.moderations.create(
+                    model="omni-moderation-latest",
+                    input=text,
+                )
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(1)
+                cur_try += 1
+            if cur_try == 3:
+                return False
 
-        result = self.openai_model.moderations.create(
-            model="omni-moderation-latest",
-            input=text,
-        )
         return max(result.results[0].category_scores.to_dict().values()) > threshold
 
     def find_harm_data(
@@ -147,7 +157,7 @@ if __name__ == "__main__":
         min_doc_length=100,
         block_size=1024,
         harm_data_finder="openai",
-        max_harm_data=1,
+        max_harm_data=5,
     )
     print(chunks)
     # def find_harm_data(self):
